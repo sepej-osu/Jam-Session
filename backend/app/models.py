@@ -9,7 +9,8 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
-    full_name: str | None = Field(default=None, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
 
 
 # Properties to receive via API on creation
@@ -20,7 +21,8 @@ class UserCreate(UserBase):
 class UserRegister(SQLModel):
     email: EmailStr = Field(max_length=255)
     password: str = Field(min_length=8, max_length=128)
-    full_name: str | None = Field(default=None, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
 
 
 # Properties to receive via API on update, all are optional
@@ -30,7 +32,8 @@ class UserUpdate(UserBase):
 
 
 class UserUpdateMe(SQLModel):
-    full_name: str | None = Field(default=None, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None, max_length=255)
 
 
@@ -42,6 +45,7 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    profile: "Profile" | None = Relationship(back_populates="user", cascade_delete=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
@@ -111,3 +115,31 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+# Shared properties
+class ProfileBase(SQLModel):
+    display_name: str = Field(max_length=255)
+    bio: str | None = Field(default=None, max_length=500)
+    experience_level: str | None = Field(default=None, max_length=100)
+    location: str | None = Field(default=None, max_length=255)
+
+# Properties to receive on profile creation
+class ProfileCreate(ProfileBase):
+    pass
+
+# Properties to receive on profile update
+class ProfileUpdate(SQLModel):
+    display_name: str | None = Field(default=None, max_length=255)
+    bio: str | None = Field(default=None, max_length=500)
+    experience_level: str | None = Field(default=None, max_length=100)
+    location: str | None = Field(default=None, max_length=255)
+
+# Database model, database table inferred from class name
+class Profile(ProfileBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, unique=True, ondelete="CASCADE"
+    )
+    user: User | None = Relationship(back_populates="profile")
+
+
