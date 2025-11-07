@@ -1,5 +1,6 @@
 import uuid
-
+from typing import Annotated
+from typing import Optional
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -45,7 +46,7 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    profile: "Profile" | None = Relationship(back_populates="user", cascade_delete=True)
+    profile: Optional["Profile"] = Relationship(back_populates="user")
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
@@ -137,9 +138,6 @@ class ProfileUpdate(SQLModel):
 # Database model, database table inferred from class name
 class Profile(ProfileBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, unique=True, ondelete="CASCADE"
-    )
-    user: User | None = Relationship(back_populates="profile")
-
+    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, unique=True)
+    user: Optional[User] = Relationship(back_populates="profile", uselist=False)
 
